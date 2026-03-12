@@ -1,3 +1,4 @@
+#pragma once
 /**
  *  Copyright © 2026 KVMemo
  *  Author: Gagan Bansal
@@ -10,7 +11,9 @@
 #include "../protocol/framing.h"
 #include "../protocol/parser.h"
 #include "../protocol/serializer.h"
+#include "../protocol/response.h"
 #include "../core/kv_engine.h"
+#include "dispatcher.h"
 
 namespace kvmemo::server
 {
@@ -23,7 +26,8 @@ namespace kvmemo::server
     public:
         explicit ServerApp(int port) : server_(port), engine_(std::make_unique<core::ShardManager>(),
                                                               std::make_unique<core::TTLIndex>(),
-                                                              std::make_unique<eviction::EvictionManager>()) {}
+                                                              std::make_unique<eviction::EvictionManager>()),
+                                       dispatcher_(engine_) {}
 
         ServerApp(const ServerApp &) = delete;
         ServerApp &operator=(const ServerApp &) = delete;
@@ -84,7 +88,7 @@ namespace kvmemo::server
                 {
                     auto request = protocol::Parser::Parse(frame);
 
-                    auto response = dispatcher_.Dispatch(request);
+                    protocol::Response response = dispatcher_.Dispatch(request);
 
                     std::string wire = protocol::Serializer::Serialize(response);
 
@@ -100,6 +104,7 @@ namespace kvmemo::server
         }
 
     private:
+        Dispatcher dispatcher_;
         net::TcpServer server_;
         core::KVEngine engine_;
     };
