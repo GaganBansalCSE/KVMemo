@@ -6,6 +6,8 @@
  */
 #include <string>
 #include <stdexcept>
+#include <vector>
+#include <sys/select.h>
 
 #include "../net/tcp_server.h"
 #include "../protocol/framing.h"
@@ -56,15 +58,35 @@ namespace kvmemo::server
 
     private:
         /**
-         * @brief Processes requests for all active connections.
+         * @brief Processes requests for all active connections using select() for event-driven I/O.
          */
         void ProcessConnections()
         {
             auto &manager = server_.Connection();
+            fd_set readfds;
+            FD_ZERO(&readfds);
 
-            for (int fd = 0; fd < 65536; fd++)
-            {
-                ConnectionSafeProcess(manager, fd);
+            int max_fd = 0;
+            active_fds_.clear();
+            manager.ForEachConnection([&](int fd, net::Connection *conn) {
+                FD_SET(fd, &readfds);
+                max_fd = std::max(max_fd, fd);
+                active_fds_.push_back(fd);
+            });
+
+            if (active_fds_.empty()) return;
+
+            struct timeval tv = {0, 50000}; // 50ms timeout
+            int activity = select(max_fd + 1, &readfds, nullptr, nullptr, &tv);
+
+            if (activity < 0) return;
+
+            if (activity > 0) {
+                for (int fd : active_fds_) {
+                    if (FD_ISSET(fd, &readfds)) {
+                        ConnectionSafeProcess(manager, fd);
+                    }
+                }
             }
         }
 
@@ -110,6 +132,7 @@ namespace kvmemo::server
         Dispatcher dispatcher_;
         net::TcpServer server_;
         core::KVEngine engine_;
+        std::vector<int> active_fds_;
     };
 } // namespace kvmemo::server
 
