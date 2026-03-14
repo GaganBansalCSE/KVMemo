@@ -102,7 +102,7 @@ class EvictionManager {
     void OnWrite(const std::string& key) {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        memory_tracker_->OnAllocation();
+        memory_tracker_->Reserve(100);
         policy_->OnWrite(key);
 
         EnforceMemoryLimit();
@@ -114,7 +114,7 @@ class EvictionManager {
     void OnDelete(const std::string& key) {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        memory_tracker_->OnDeallocation();
+        memory_tracker_->Release(100);
         policy_->OnDelete(key);
     } 
 
@@ -126,7 +126,7 @@ class EvictionManager {
 
         std::vector<std::string> victims;
 
-        while(memory_tracker_->IsLimitExceeded()) {
+        while(memory_tracker_->IsOverLimit()) {
             auto candidate = policy_->SelectVictim();
 
             if(!candidate.has_value()) {
@@ -134,7 +134,7 @@ class EvictionManager {
             }
 
             victims.push_back(candidate.value());
-            memory_tracker_->OnDeallocation();
+            memory_tracker_->Release(100);
         }
 
         return victims;
@@ -142,7 +142,7 @@ class EvictionManager {
 
     private:
         void EnforceMemoryLimit() {
-            if(!memory_tracker_->IsLimitExceeded()) {
+            if(!memory_tracker_->IsOverLimit()) {
                 return;
             }
         }

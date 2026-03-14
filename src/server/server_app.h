@@ -24,16 +24,19 @@ namespace kvmemo::server
     class ServerApp final
     {
     public:
-        explicit ServerApp(int port) : server_(port), engine_(std::make_unique<core::ShardManager>(),
+        explicit ServerApp(int port) : server_(port), engine_(std::make_unique<core::ShardManager>(16, 10000),
                                                               std::make_unique<core::TTLIndex>(),
-                                                              std::make_unique<eviction::EvictionManager>()),
+                                                              std::make_unique<eviction::EvictionManager>(
+                                                                  std::make_unique<eviction::MemoryTracker>(256 * 1024 * 1024),
+                                                                  std::make_unique<eviction::LRUPolicy>(
+                                                                      std::make_unique<core::LRUCache>(10000)))),
                                        dispatcher_(engine_) {}
 
         ServerApp(const ServerApp &) = delete;
         ServerApp &operator=(const ServerApp &) = delete;
 
         ServerApp(ServerApp &&) noexcept = default;
-        ServerApp &operator=(ServerApp &&) noexcept = default;
+        ServerApp &operator=(ServerApp &&) noexcept = delete;
 
         ~ServerApp() = default;
 

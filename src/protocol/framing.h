@@ -17,6 +17,7 @@
  *  ALL RIGHT RESERVED.
  */
 
+#include <algorithm>
 #include <string>
 
 #include "buffer.h"
