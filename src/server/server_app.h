@@ -51,14 +51,18 @@ namespace kvmemo::server
 
             while (true)
             {
-                server_.Accept();
                 ProcessConnections();
             }
         }
 
     private:
         /**
-         * @brief Processes requests for all active connections using select() for event-driven I/O.
+         * @brief Accepts new connections and processes requests for all active
+         *        connections using select() for event-driven I/O.
+         *
+         *        The listening socket is included in the select() watch set so
+         *        that the loop never blocks waiting for a new connection while
+         *        existing clients are waiting for their commands to be handled.
          */
         void ProcessConnections()
         {
@@ -66,7 +70,10 @@ namespace kvmemo::server
             fd_set readfds;
             FD_ZERO(&readfds);
 
-            int max_fd = 0;
+            int listen_fd = server_.ListenFD();
+            FD_SET(listen_fd, &readfds);
+            int max_fd = listen_fd;
+
             active_fds_.clear();
             manager.ForEachConnection([&](int fd, net::Connection *conn) {
                 FD_SET(fd, &readfds);
@@ -74,14 +81,16 @@ namespace kvmemo::server
                 active_fds_.push_back(fd);
             });
 
-            if (active_fds_.empty()) return;
-
-            struct timeval tv = {0, 50000}; // 50ms timeout
+            struct timeval tv = {0, kSelectTimeoutUs};
             int activity = select(max_fd + 1, &readfds, nullptr, nullptr, &tv);
 
             if (activity < 0) return;
 
             if (activity > 0) {
+                if (FD_ISSET(listen_fd, &readfds)) {
+                    server_.Accept();
+                }
+
                 for (int fd : active_fds_) {
                     if (FD_ISSET(fd, &readfds)) {
                         ConnectionSafeProcess(manager, fd);
@@ -129,6 +138,8 @@ namespace kvmemo::server
         }
 
     private:
+        static constexpr int kSelectTimeoutUs = 50000; // 50ms
+
         Dispatcher dispatcher_;
         net::TcpServer server_;
         core::KVEngine engine_;
