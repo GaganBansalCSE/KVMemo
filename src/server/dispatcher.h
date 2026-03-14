@@ -38,7 +38,7 @@ namespace kvmemo::server
         Dispatcher &operator=(const Dispatcher &) = delete;
 
         Dispatcher(Dispatcher &&) noexcept = default;
-        Dispatcher &operator=(Dispatcher &&) noexcept = default;
+        Dispatcher &operator=(Dispatcher &&) noexcept = delete;
 
         ~Dispatcher() = default;
 

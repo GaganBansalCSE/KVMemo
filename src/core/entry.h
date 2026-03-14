@@ -51,6 +51,8 @@ namespace kvmemo::core {
                                         created_at_(common::Clock::NowEpochMillis()),
                                         expire_at_(ttl_ms == 0 ? 0 : created_at_ + ttl_ms) {}
     
+        Entry() : value_(""), created_at_(0), expire_at_(0) {}
+    
 
         Entry(const Entry&) = default;
         Entry(Entry&&) noexcept = default;
