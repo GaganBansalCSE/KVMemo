@@ -432,7 +432,39 @@ Response: +OK
           └─ Returns OK even if key didn't exist
 ```
 
-### 6.4 EXISTS — Check Key Existence
+### 6.4 KEYS — Retrieve All Key-Value Pairs
+
+**Syntax:**
+```
+KEYS
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| *(none)* | — | — | KEYS takes no arguments |
+
+**Response:**
+- `+OK <key1>:<value1>\n<key2>:<value2>\n...` — All non-expired key-value pairs, one per line in `key:value` format
+- `+OK` (empty message) — No keys currently stored
+- `-ERR KEYS takes no arguments` — Arguments were provided
+
+**Examples:**
+
+```
+Request:  KEYS
+Response: +OK user:1:Alice
+               session:abc:sessiondata123
+               config:timeout:5000
+          └─ Each pair on its own line as key:value
+
+Request:  KEYS
+Response: +OK
+          └─ Empty store; no keys present
+```
+
+### 6.5 EXISTS — Check Key Existence
 
 **Syntax:**
 ```
@@ -462,7 +494,7 @@ Response: :0
           └─ Key does not exist
 ```
 
-### 6.5 INCR — Increment Integer Value
+### 6.6 INCR — Increment Integer Value
 
 **Syntax:**
 ```
@@ -499,7 +531,7 @@ Response: :1
           └─ Key created with value 1
 ```
 
-### 6.6 PING — Connectivity Check
+### 6.7 PING — Connectivity Check
 
 **Syntax:**
 ```
