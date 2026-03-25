@@ -127,6 +127,15 @@ namespace kvmemo::core {
             }
         }
 
+        /**
+         * @brief Health check method.
+         * 
+         * @return "PONG" string to indicate the engine is operational.
+         */
+        std::string Ping() const {
+            return "PONG";
+        }
+
     private:
         std::unique_ptr<ShardManager> shard_manager_;
         std::unique_ptr<TTLIndex> ttl_index_;
