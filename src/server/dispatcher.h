@@ -69,6 +69,11 @@ namespace kvmemo::server
                 return HandleDelete(request);
             }
 
+            if (cmd == "PING")
+            {
+                return HandlePing(request);
+            }
+
             return protocol::Response::Error("Unknown command");
         }
 
@@ -119,6 +124,19 @@ namespace kvmemo::server
             engine_.Delete(key);
 
             return protocol::Response::Ok();
+        }
+
+        /**
+         * @brief Handles PING health check command.
+         */
+        protocol::Response HandlePing(const protocol::Request &req)
+        {
+            if (req.ArgCount() > 0)
+            {
+                return protocol::Response::Error("PING takes no arguments");
+            }
+
+            return protocol::Response::Ok(engine_.Ping());
         }
 
     private:

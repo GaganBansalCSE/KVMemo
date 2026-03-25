@@ -503,28 +503,26 @@ Response: :1
 
 **Syntax:**
 ```
-PING [<message>]
+PING
 ```
+
+**Description:**
+
+Health check / keep-alive command. Used to verify that the server is operational and responding to requests. Takes no arguments.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `message` | string | No | Echo this message back |
+None
 
 **Response:**
-- `+PONG` — If no message
-- `$<length>\r\n<message>` — If message provided (bulk string)
+- `+PONG` — Server is operational
+- `-ERR PING takes no arguments` — If any arguments are provided
 
 **Examples:**
 
 ```
 Request:  PING
 Response: +PONG
-
-Request:  PING hello
-Response: $5\r\nhello
-          └─ Echo the message back
 ```
 
 ---
