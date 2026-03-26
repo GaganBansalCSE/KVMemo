@@ -19,6 +19,7 @@
 
 #include <string>
 #include <optional>
+#include <stdexcept>
 
 #include "../protocol/request.h"
 #include "../protocol/response.h"
@@ -69,6 +70,11 @@ namespace kvmemo::server
                 return HandleDelete(request);
             }
 
+            if (cmd == "SETEX")
+            {
+                return HandleSetEx(request);
+            }
+
             return protocol::Response::Error("Unknown command");
         }
 
@@ -105,6 +111,41 @@ namespace kvmemo::server
             }
 
             return protocol::Response::Ok(value.value());
+        }
+
+        protocol::Response HandleSetEx(const protocol::Request &req)
+        {
+            if (req.ArgCount() < 3)
+            {
+                return protocol::Response::Error("SETEX requires key, ttl_ms and value");
+            }
+
+            const std::string &key = req.Arg(0);
+            const std::string &ttl_str = req.Arg(1);
+            const std::string &value = req.Arg(2);
+
+            uint64_t ttl_ms = 0;
+            try
+            {
+                if (!ttl_str.empty() && ttl_str[0] == '-')
+                {
+                    return protocol::Response::Error("SETEX ttl_ms must be a positive integer");
+                }
+                unsigned long long parsed = std::stoull(ttl_str);
+                if (parsed == 0)
+                {
+                    return protocol::Response::Error("SETEX ttl_ms must be a positive integer");
+                }
+                ttl_ms = static_cast<uint64_t>(parsed);
+            }
+            catch (const std::exception &)
+            {
+                return protocol::Response::Error("SETEX ttl_ms must be a valid integer");
+            }
+
+            engine_.Set(key, value, ttl_ms);
+
+            return protocol::Response::Ok();
         }
 
         protocol::Response HandleDelete(const protocol::Request &req)
