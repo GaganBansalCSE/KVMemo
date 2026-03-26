@@ -96,6 +96,15 @@ namespace kvmemo::core {
         }
 
         /**
+         * @brief Retrieves all non-expired key-value pairs in the store.
+         *
+         * @return Vector of (key, value) pairs for every live key.
+         */
+        std::vector<std::pair<std::string, std::string>> GetAllKeys() const {
+            return shard_manager_->GetAllKeys();
+        }
+
+        /**
          * @brief Expires keys that are due.
          * Called by TTL manager thread.
          */
@@ -116,6 +125,15 @@ namespace kvmemo::core {
                 shard_manager_->Delete(key);
                 ttl_index_->Remove(key);
             }
+        }
+
+        /**
+         * @brief Health check method.
+         * 
+         * @return "PONG" string to indicate the engine is operational.
+         */
+        std::string Ping() const {
+            return "PONG";
         }
 
     private:

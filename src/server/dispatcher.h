@@ -19,6 +19,7 @@
 
 #include <string>
 #include <optional>
+#include <stdexcept>
 
 #include "../protocol/request.h"
 #include "../protocol/response.h"
@@ -67,6 +68,21 @@ namespace kvmemo::server
             if (cmd == "DEL")
             {
                 return HandleDelete(request);
+            }
+
+            if (cmd == "SETEX")
+            {
+                return HandleSetEx(request);
+            }
+
+            if (cmd == "KEYS")
+            {
+                return HandleKeys(request);
+            }
+
+            if (cmd == "PING")
+            {
+                return HandlePing(request);
             }
 
             return protocol::Response::Error("Unknown command");
@@ -119,6 +135,80 @@ namespace kvmemo::server
             engine_.Delete(key);
 
             return protocol::Response::Ok();
+        }
+
+        protocol::Response HandleSetEx(const protocol::Request &req)
+        {
+            if (req.ArgCount() < 3)
+            {
+                return protocol::Response::Error("SETEX requires key, ttl_ms and value");
+            }
+
+            const std::string &key = req.Arg(0);
+            const std::string &ttl_str = req.Arg(1);
+            const std::string &value = req.Arg(2);
+
+            uint64_t ttl_ms = 0;
+            try
+            {
+                if (!ttl_str.empty() && ttl_str[0] == '-')
+                {
+                    return protocol::Response::Error("SETEX ttl_ms must be a positive integer");
+                }
+                unsigned long long parsed = std::stoull(ttl_str);
+                if (parsed == 0)
+                {
+                    return protocol::Response::Error("SETEX ttl_ms must be a positive integer");
+                }
+                ttl_ms = static_cast<uint64_t>(parsed);
+            }
+            catch (const std::exception &)
+            {
+                return protocol::Response::Error("SETEX ttl_ms must be a valid integer");
+            }
+
+            engine_.Set(key, value, ttl_ms);
+
+            return protocol::Response::Ok();
+        }
+
+        /**
+         * @brief Handles the KEYS command — returns all key:value pairs.
+         */
+        protocol::Response HandleKeys(const protocol::Request &req)
+        {
+            if (req.ArgCount() > 0)
+            {
+                return protocol::Response::Error("KEYS takes no arguments");
+            }
+
+            auto pairs = engine_.GetAllKeys();
+
+            std::string result;
+            for (const auto &[key, value] : pairs)
+            {
+                result += key + ":" + value + "\n";
+            }
+
+            // Remove trailing newline if present
+            if (!result.empty() && result.back() == '\n')
+            {
+                result.pop_back();
+            }
+
+            return protocol::Response::Ok(result);
+        }
+
+        /**
+         * @brief Handles PING health check command.
+         */
+        protocol::Response HandlePing(const protocol::Request &req)
+        {
+            if (req.ArgCount() > 0)
+            {
+                return protocol::Response::Error("PING takes no arguments");
+            }
+            return protocol::Response::Ok(engine_.Ping());
         }
 
     private:
