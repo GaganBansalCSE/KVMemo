@@ -14,6 +14,8 @@
    - [SETEX](#setex)
    - [KEYS](#keys)
    - [PING](#ping)
+   - [FLUSH](#flush)
+   - [EXISTS](#exists)
 3. [Using the CLI](#using-the-cli)
 4. [Error Responses](#error-responses)
 
@@ -244,6 +246,73 @@ PONG
 
 ---
 
+### FLUSH
+
+Delete all keys from the store. Resets the TTL index and memory tracker.
+
+**Syntax:**
+```
+FLUSH
+```
+
+**Arguments:** None.
+
+**Response:** `OK`
+
+**Example:**
+```
+kvmemo> SET foo bar
+OK
+
+kvmemo> SET hello world
+OK
+
+kvmemo> FLUSH
+OK
+
+kvmemo> KEYS
+
+```
+
+---
+
+### EXISTS
+
+Check if a key exists in the store. Expired keys return `0`.
+
+**Syntax:**
+```
+EXISTS <key>
+```
+
+**Arguments:**
+| Argument | Required | Description |
+|---|---|---|
+| `key` | Yes | The key to check |
+
+**Response:** `1` if the key exists, `0` if it does not exist or has expired.
+
+**Examples:**
+```
+kvmemo> SET name Alice
+OK
+
+kvmemo> EXISTS name
+1
+
+kvmemo> EXISTS missing_key
+0
+
+kvmemo> SETEX temp_key 100 value
+OK
+
+# After TTL expires:
+kvmemo> EXISTS temp_key
+0
+```
+
+---
+
 ## Using the CLI
 
 After connecting with `kv_cli`, type commands at the `kvmemo>` prompt.
@@ -284,4 +353,6 @@ All errors are returned with an `ERR` prefix:
 | `ERR SETEX ttl_ms must be a valid integer` | TTL is not a valid number |
 | `ERR KEYS takes no arguments` | `KEYS` called with extra arguments |
 | `ERR PING takes no arguments` | `PING` called with extra arguments |
+| `ERR FLUSH takes no arguments` | `FLUSH` called with extra arguments |
+| `ERR EXISTS requires key` | `EXISTS` called without a key |
 | `ERR Key not found` | `GET` on a key that does not exist or has expired |
