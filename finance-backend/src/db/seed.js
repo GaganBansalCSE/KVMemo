@@ -69,7 +69,7 @@ async function seed() {
 
   console.log('✅  Seed complete.');
   console.log('\nDemo credentials:');
-  users.forEach(u => console.log(`  ${u.role.padEnd(8)} → username: ${u.username}, password: ${u.password}`));
+  users.forEach(u => console.log(`  ${u.role.padEnd(8)} → username: ${u.username}, password: (set during seed)`));
 }
 
 seed().catch(err => { console.error(err); process.exit(1); });

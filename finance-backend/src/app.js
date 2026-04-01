@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes      = require('./routes/auth');
 const userRoutes      = require('./routes/users');
@@ -13,14 +14,33 @@ const app = express();
 // ── Body parsing ────────────────────────────────────────────────────────────
 app.use(express.json());
 
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth',      authRoutes);
-app.use('/api/users',     userRoutes);
-app.use('/api/records',   recordRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/auth',      authLimiter, authRoutes);
+app.use('/api/users',     apiLimiter,  userRoutes);
+app.use('/api/records',   apiLimiter,  recordRoutes);
+app.use('/api/dashboard', apiLimiter,  dashboardRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: 'Route not found.' }));
